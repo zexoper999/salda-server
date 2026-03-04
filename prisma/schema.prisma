@@ -1,0 +1,25 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// User 테이블
+model User {
+  id        Int      @id @default(autoincrement())  // 자동 증가하는 고유 ID
+  kakaoId   String   @unique                        // 카카오 고유 식별자
+  name      String                                   // 이름
+  phone     String?                                  // 전화번호 (선택)
+  point     Int      @default(0)                    // 보유 포인트 (기본값 0)
+  createdAt DateTime @default(now())                // 가입일 (자동)
+  updatedAt DateTime @updatedAt                     // 수정일 (자동)
+}
