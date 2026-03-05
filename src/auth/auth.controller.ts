@@ -7,9 +7,10 @@ import type { Request, Response } from 'express';
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+  //auth/kakao 요청이 오면 카카오 로그인 시작
   // ① 카카오 로그인 시작 (이 URL로 접속하면 카카오 로그인 페이지로 자동 이동)
   @Get('kakao')
-  @UseGuards(AuthGuard('kakao'))
+  @UseGuards(AuthGuard('kakao')) // Passport가 'kakao' 전략 실행
   kakaoLogin() {
     // Passport가 자동으로 카카오 로그인 페이지로 리다이렉트
   }
