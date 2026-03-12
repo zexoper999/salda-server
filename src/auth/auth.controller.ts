@@ -2,10 +2,14 @@ import { Controller, Get, Req, Res, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { AuthService } from './auth.service';
 import type { Request, Response } from 'express';
+import { UsersService } from '../users/users.service';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly usersService: UsersService,
+  ) {}
 
   //auth/kakao 요청이 오면 카카오 로그인 시작
   // ① 카카오 로그인 시작 (이 URL로 접속하면 카카오 로그인 페이지로 자동 이동)
@@ -32,5 +36,17 @@ export class AuthController {
 
     // 로그인 완료 후 프론트 메인 페이지로 이동
     return res.redirect(process.env.CLIENT_URL!);
+  }
+
+  // 내 정보 조회 API
+  @Get('me')
+  @UseGuards(AuthGuard('jwt')) // JWT 토큰이 있는 사람만 통과
+  async getProfile(@Req() req: Request) {
+    // req.user에는 JwtStrategy에서 리턴한 { userId, kakaoId }가 들어있음
+    const userPayload = req.user as { userId: number; kakaoId: string };
+
+    // DB에서 해당 유저의 조회
+    const user = await this.usersService.findByKakaoId(userPayload.kakaoId);
+    return user;
   }
 }
