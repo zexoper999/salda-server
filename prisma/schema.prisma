@@ -23,4 +23,38 @@ model User {
   point     Int      @default(0)                    // 보유 포인트 (기본값 0)
   createdAt DateTime @default(now())                // 가입일 (자동)
   updatedAt DateTime @updatedAt                     // 수정일 (자동)
+
+  // 유저가 완료한 미션들 (N:M 관계의 중간 테이블 연결)
+  userMissions UserMission[]
+}
+
+// 미션 테이블
+model Mission {
+  id          Int      @id @default(autoincrement())
+  title       String                    // 미션 제목 (예: "SNS 구독하면 응모권+120P 획득")
+  description String?                   // 미션 설명
+  rewardPoint Int      @default(0)      // 완료 시 지급 포인트
+  rewardTicket Int     @default(0)      // 완료 시 지급 응모권 조각
+  missionUrl  String?                   // 미션 수행 링크 (SNS 주소 등)
+  isActive    Boolean  @default(true)   // 미션 활성화 여부 (false면 숨김)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // 이 미션을 완료한 유저들 (N:M 관계의 중간 테이블 연결)
+  userMissions UserMission[]
+}
+
+// 유저-미션 완료 기록 테이블 (중간 테이블)
+model UserMission {
+  id          Int      @id @default(autoincrement())
+  userId      Int                       // 어떤 유저가
+  missionId   Int                       // 어떤 미션을 완료했는지
+  completedAt DateTime @default(now())  // 언제 완료했는지
+
+  // 관계 설정
+  user    User    @relation(fields: [userId],    references: [id])
+  mission Mission @relation(fields: [missionId], references: [id])
+
+  // 같은 유저가 같은 미션을 중복 완료하지 못하도록 유니크 제약
+  @@unique([userId, missionId])
 }
