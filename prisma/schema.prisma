@@ -1,12 +1,6 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+  provider     = "prisma-client"
+  output       = "../generated/prisma"
   moduleFormat = "cjs"
 }
 
@@ -14,47 +8,272 @@ datasource db {
   provider = "postgresql"
 }
 
-// User 테이블
+// ─────────────────────────────────────────────
+// Enums
+// ─────────────────────────────────────────────
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+enum MissionCategory {
+  SNS_SUBSCRIBE // SNS 구독
+  PAGE_VISIT    // 페이지 방문
+  TAG_FIND      // 관련 태그 찾기
+}
+
+enum MissionStatus {
+  ACTIVE   // 진행중
+  INACTIVE // 비활성화
+  CLOSED   // 마감
+}
+
+enum SubscriptionType {
+  JEONSE  // 전세청약
+  VEHICLE // 차량청약
+}
+
+enum SubscriptionStatus {
+  ONGOING      // 응모진행중
+  CLOSING_SOON // 마감임박
+  CLOSED       // 응모마감
+}
+
+enum ProductCategory {
+  GIFT_CARD   // 상품권
+  CAFE        // 카페
+  CONVENIENCE // 편의점
+  BURGER_PIZZA // 햄버거/피자
+  GAS         // 주유권
+  DINING      // 외식
+}
+
+enum ProductStatus {
+  ON_SALE   // 판매중
+  SUSPENDED // 판매중지
+  ENDED     // 판매종료
+}
+
+enum InquiryStatus {
+  PENDING  // 답변 대기
+  ANSWERED // 답변 완료
+}
+
+// ─────────────────────────────────────────────
+// User
+// ─────────────────────────────────────────────
+
 model User {
-  id        Int      @id @default(autoincrement())  // 자동 증가하는 고유 ID
-  kakaoId   String   @unique                        // 카카오 고유 식별자
-  name      String                                   // 이름
-  phone     String?                                  // 전화번호 (선택)
-  point     Int      @default(0)                    // 보유 포인트 (기본값 0)
-  createdAt DateTime @default(now())                // 가입일 (자동)
-  updatedAt DateTime @updatedAt                     // 수정일 (자동)
+  id        Int      @id @default(autoincrement())
+  kakaoId   String?  @unique // 카카오 고유 식별자
+  appleId   String?  @unique // 애플 고유 식별자
+  name      String
+  phone     String?
+  birthYear Int?              // 나이 제한 검증용 (만 19세 미만 미션 차단)
+  point     Int      @default(0) // 보유 포인트
+  ticket    Int      @default(0) // 보유 응모권 수
+  role      UserRole @default(USER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  // 유저가 완료한 미션들 (N:M 관계의 중간 테이블 연결)
-  userMissions UserMission[]
+  userMissions       UserMission[]
+  subscriptionEntries SubscriptionEntry[]
+  purchases          Purchase[]
+  inquiries          Inquiry[]
+  attendances        Attendance[]
 }
 
-// 미션 테이블
+// ─────────────────────────────────────────────
+// Mission
+// ─────────────────────────────────────────────
+
 model Mission {
-  id          Int      @id @default(autoincrement())
-  title       String                    // 미션 제목 (예: "SNS 구독하면 응모권+120P 획득")
-  description String?                   // 미션 설명
-  rewardPoint Int      @default(0)      // 완료 시 지급 포인트
-  rewardTicket Int     @default(0)      // 완료 시 지급 응모권 조각
-  missionUrl  String?                   // 미션 수행 링크 (SNS 주소 등)
-  isActive    Boolean  @default(true)   // 미션 활성화 여부 (false면 숨김)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id           Int             @id @default(autoincrement())
+  category     MissionCategory
+  status       MissionStatus   @default(ACTIVE)
+  title        String          // 미션 제목
+  oneLineDesc  String?         // 한 줄 설명
+  description  String?         // 상세 설명
+  imageUrl     String?         // 미션 썸네일 이미지 (R2)
+  publisher    String?         // 발주처 (광고주)
+  missionUrl   String?         // 미션 수행 링크
+  rewardPoint  Int             @default(0)  // 완료 시 지급 포인트
+  rewardTicket Int             @default(0)  // 완료 시 지급 응모권 조각
+  ageRestriction Boolean       @default(false) // true면 만 19세 미만 참여 불가
+  isFirstCome  Boolean         @default(false) // 선착순 미션 여부
+  limitCount   Int?            // 선착순 최대 참여 수 (isFirstCome=true일 때 사용)
+  startAt      DateTime?       // 미션 시작일
+  endAt        DateTime?       // 미션 종료일
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
 
-  // 이 미션을 완료한 유저들 (N:M 관계의 중간 테이블 연결)
   userMissions UserMission[]
 }
 
-// 유저-미션 완료 기록 테이블 (중간 테이블)
+// ─────────────────────────────────────────────
+// UserMission (미션 완료 기록)
+// ─────────────────────────────────────────────
+// @@unique 제거: 같은 미션을 다음 날 재도전 가능
+// 중복 완료 방지는 서비스 레이어에서 날짜 기준으로 처리
+
 model UserMission {
   id          Int      @id @default(autoincrement())
-  userId      Int                       // 어떤 유저가
-  missionId   Int                       // 어떤 미션을 완료했는지
-  completedAt DateTime @default(now())  // 언제 완료했는지
+  userId      Int
+  missionId   Int
+  completedAt DateTime @default(now())
 
-  // 관계 설정
   user    User    @relation(fields: [userId],    references: [id])
   mission Mission @relation(fields: [missionId], references: [id])
 
-  // 같은 유저가 같은 미션을 중복 완료하지 못하도록 유니크 제약
-  @@unique([userId, missionId])
+  @@index([userId, missionId])
+}
+
+// ─────────────────────────────────────────────
+// Subscription (청약)
+// ─────────────────────────────────────────────
+
+model Subscription {
+  id            Int                @id @default(autoincrement())
+  type          SubscriptionType
+  status        SubscriptionStatus @default(ONGOING)
+  title         String
+  oneLineDesc   String?
+  description   String?
+  imageUrl      String?            // 청약 대표 이미지 (R2)
+  deposit       Int                // 보증금 (원)
+  bonusIncluded Boolean            @default(false) // 보너스 응모 포함 여부
+  startAt       DateTime
+  endAt         DateTime
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+
+  entries SubscriptionEntry[]
+}
+
+// ─────────────────────────────────────────────
+// SubscriptionEntry (청약 응모)
+// ─────────────────────────────────────────────
+
+model SubscriptionEntry {
+  id             Int      @id @default(autoincrement())
+  userId         Int
+  subscriptionId Int
+  ticketCount    Int      // 이번 응모에 사용한 응모권 수
+  createdAt      DateTime @default(now())
+
+  user         User         @relation(fields: [userId],         references: [id])
+  subscription Subscription @relation(fields: [subscriptionId], references: [id])
+
+  @@index([userId, subscriptionId])
+}
+
+// ─────────────────────────────────────────────
+// Product (쇼핑 상품)
+// ─────────────────────────────────────────────
+
+model Product {
+  id          Int           @id @default(autoincrement())
+  category    ProductCategory
+  status      ProductStatus @default(ON_SALE)
+  name        String
+  description String?
+  imageUrl    String?       // 상품 이미지 (R2)
+  price       Int           // 포인트 가격
+  stock       Int?          // null이면 무제한
+  startAt     DateTime?
+  endAt       DateTime?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  purchases Purchase[]
+}
+
+// ─────────────────────────────────────────────
+// Purchase (구매 내역)
+// ─────────────────────────────────────────────
+
+model Purchase {
+  id           Int      @id @default(autoincrement())
+  userId       Int
+  productId    Int
+  phone        String   // 기프티콘 발송 번호
+  pointBefore  Int      // 구매 전 포인트
+  pointUsed    Int      // 사용 포인트
+  pointAfter   Int      // 구매 후 포인트
+  createdAt    DateTime @default(now())
+
+  user    User    @relation(fields: [userId],    references: [id])
+  product Product @relation(fields: [productId], references: [id])
+}
+
+// ─────────────────────────────────────────────
+// Notice (공지사항)
+// ─────────────────────────────────────────────
+
+model Notice {
+  id        Int      @id @default(autoincrement())
+  title     String
+  content   String
+  isVisible Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ─────────────────────────────────────────────
+// Faq
+// ─────────────────────────────────────────────
+
+model Faq {
+  id        Int      @id @default(autoincrement())
+  question  String
+  answer    String
+  order     Int      @default(0) // 노출 순서
+  isVisible Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ─────────────────────────────────────────────
+// Inquiry (문의)
+// ─────────────────────────────────────────────
+
+model Inquiry {
+  id        Int           @id @default(autoincrement())
+  userId    Int
+  title     String
+  content   String
+  status    InquiryStatus @default(PENDING)
+  answer    String?       // 관리자 답변
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+// ─────────────────────────────────────────────
+// PushNotification (알림)
+// ─────────────────────────────────────────────
+
+model PushNotification {
+  id        Int      @id @default(autoincrement())
+  title     String
+  body      String
+  sendAt    DateTime?  // 예약 발송 시간 (null이면 즉시)
+  sentAt    DateTime?  // 실제 발송 완료 시간
+  createdAt DateTime   @default(now())
+}
+
+// ─────────────────────────────────────────────
+// Attendance (출석)
+// ─────────────────────────────────────────────
+
+model Attendance {
+  id          Int      @id @default(autoincrement())
+  userId      Int
+  attendedAt  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
 }
