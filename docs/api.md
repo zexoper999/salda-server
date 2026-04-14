@@ -337,14 +337,160 @@ Content-Type: application/json
 
 ## 4. 쇼핑 (Products)
 
-> 🚧 Phase 4 구현 예정
+> 모든 쇼핑 API는 JWT 인증이 필요합니다 🔐
 
-| 엔드포인트 | 설명 |
-|-----------|------|
-| `GET /products` | 상품 목록 (카테고리 필터) |
-| `GET /products/:id` | 상품 상세 |
-| `POST /products/:id/purchase` | 포인트로 구매 (환불 불가) |
-| `GET /products/my/purchases` | 내 구매 내역 |
+### 4-1. 상품 목록
+
+```
+GET /products?category={category}
+```
+
+`ON_SALE` 상태이고 판매 기간 내인 상품만 반환합니다.
+
+**쿼리 파라미터**
+
+| 파라미터 | 타입 | 필수 | 설명 |
+|---------|------|:----:|------|
+| `category` | `GIFT_CARD \| CAFE \| CONVENIENCE \| BURGER_PIZZA \| GAS \| DINING` | — | 없으면 전체 |
+
+**응답 예시**
+```json
+{
+  "status": "success",
+  "data": {
+    "total": 2,
+    "products": [
+      {
+        "id": 1,
+        "category": "CAFE",
+        "name": "스타벅스 2만원 상품권",
+        "imageUrl": "https://...",
+        "price": 200,
+        "stock": 50,
+        "purchaseCount": 265,
+        "isSoldOut": false
+      }
+    ]
+  }
+}
+```
+
+---
+
+### 4-2. 상품 상세
+
+```
+GET /products/:id
+```
+
+**경로 파라미터**
+
+| 파라미터 | 타입 | 설명 |
+|---------|------|------|
+| `id` | number | 상품 ID |
+
+**응답 예시**
+```json
+{
+  "status": "success",
+  "data": {
+    "id": 1,
+    "category": "CAFE",
+    "status": "ON_SALE",
+    "name": "스타벅스 2만원 상품권",
+    "description": "스타벅스 2만원 충전",
+    "imageUrl": "https://...",
+    "price": 200,
+    "stock": 50,
+    "startAt": "2026-01-01T00:00:00.000Z",
+    "endAt": "2026-12-31T23:59:59.000Z",
+    "purchaseCount": 265,
+    "isSoldOut": false
+  }
+}
+```
+
+**오류**
+
+| 코드 | 설명 |
+|------|------|
+| 400 | 판매 기간 외 / 판매 중지·종료 상태 |
+| 404 | 상품 없음 |
+
+---
+
+### 4-3. 구매
+
+```
+POST /products/:id/purchase
+Content-Type: application/json
+```
+
+포인트를 차감하고 기프티콘 발송 내역을 기록합니다. **구매 후 환불 불가.**
+
+**경로 파라미터**
+
+| 파라미터 | 타입 | 설명 |
+|---------|------|------|
+| `id` | number | 상품 ID |
+
+**요청 본문**
+
+| 필드 | 타입 | 필수 | 설명 |
+|------|------|:----:|------|
+| `phone` | string | O | 기프티콘 수령 휴대폰 번호 (01x-xxxx-xxxx 형식) |
+
+**응답 예시**
+```json
+{
+  "status": "success",
+  "data": {
+    "purchaseId": 42,
+    "pointUsed": 200,
+    "pointAfter": 4800
+  },
+  "message": "구매가 완료되었습니다. 기프티콘을 발송해 드립니다."
+}
+```
+
+**오류**
+
+| 코드 | 설명 |
+|------|------|
+| 400 | 포인트 부족 / 품절 / 판매 기간 외 / 판매 중지·종료 |
+| 404 | 상품 없음 |
+
+---
+
+### 4-4. 내 구매 내역
+
+```
+GET /products/my/purchases
+```
+
+**응답 예시**
+```json
+{
+  "status": "success",
+  "data": [
+    {
+      "id": 42,
+      "phone": "01034478579",
+      "pointBefore": 5000,
+      "pointUsed": 200,
+      "pointAfter": 4800,
+      "createdAt": "2026-04-14T11:00:00.000Z",
+      "product": {
+        "id": 1,
+        "category": "CAFE",
+        "name": "스타벅스 2만원 상품권",
+        "imageUrl": "https://...",
+        "price": 200
+      }
+    }
+  ]
+}
+```
 
 ---
 
