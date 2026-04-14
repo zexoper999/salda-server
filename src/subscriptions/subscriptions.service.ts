@@ -11,24 +11,48 @@ import { EnterSubscriptionDto } from './dto/enter-subscription.dto';
 export class SubscriptionsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  // 청약 목록 — 타입 필터 (전세/차량), CLOSED 제외
-  async findAll(type?: SubscriptionType) {
+  // 청약 목록 — 타입 필터, 각 청약의 응모달성률 + 사용자 미션진행도 포함
+  async findAll(type: SubscriptionType | undefined, userId: number) {
     const subscriptions = await this.prisma.client.subscription.findMany({
       where: { ...(type ? { type } : {}) },
       orderBy: { endAt: 'asc' },
+      include: { _count: { select: { entries: true } } },
     });
 
-    return { status: 'success', data: subscriptions };
+    // 사용자 전체 미션 완료 횟수 → 10으로 나눈 나머지 = 현재 사이클 진행도
+    const totalMissions = await this.prisma.client.userMission.count({
+      where: { userId },
+    });
+    const missionCount = totalMissions % 10;
+
+    const items = subscriptions.map(({ _count, ...sub }) => {
+      const totalEntryCount = _count.entries;
+      const entryProgress =
+        sub.maxEntries > 0
+          ? parseFloat(((totalEntryCount / sub.maxEntries) * 100).toFixed(1))
+          : 0;
+      return { ...sub, totalEntryCount, entryProgress };
+    });
+
+    return {
+      status: 'success',
+      data: { subscriptions: items, missionCount },
+    };
   }
 
-  // 청약 상세 — 내 점유율 포함 (polling 대응)
+  // 청약 상세 — 내 참여율 + 응모달성률 포함 (polling 대응)
   async findOne(id: number, userId: number) {
     const subscription = await this.prisma.client.subscription.findUnique({
       where: { id },
     });
     if (!subscription) throw new NotFoundException('청약을 찾을 수 없습니다.');
 
-    // 전체 응모권 합계
+    // 전체 응모 건수 (SubscriptionEntry row 수)
+    const totalEntryCount = await this.prisma.client.subscriptionEntry.count({
+      where: { subscriptionId: id },
+    });
+
+    // 전체 응모권 합계 (내 참여율 계산용)
     const totalAgg = await this.prisma.client.subscriptionEntry.aggregate({
       where: { subscriptionId: id },
       _sum: { ticketCount: true },
@@ -42,14 +66,28 @@ export class SubscriptionsService {
     });
     const myTickets = myAgg._sum.ticketCount ?? 0;
 
+    // 내 참여율 = 내 응모권 / 전체 응모권
     const myEntryRate =
       totalTickets > 0
         ? parseFloat(((myTickets / totalTickets) * 100).toFixed(2))
         : 0;
 
+    // 응모달성률 = 전체 응모 건수 / 목표 응모수
+    const entryProgress =
+      subscription.maxEntries > 0
+        ? parseFloat(((totalEntryCount / subscription.maxEntries) * 100).toFixed(1))
+        : 0;
+
     return {
       status: 'success',
-      data: { ...subscription, totalTickets, myTickets, myEntryRate },
+      data: {
+        ...subscription,
+        totalEntryCount,
+        totalTickets,
+        myTickets,
+        myEntryRate,
+        entryProgress,
+      },
     };
   }
 
@@ -78,13 +116,11 @@ export class SubscriptionsService {
         );
       }
 
-      // 응모권 차감
       const updated = await tx.user.update({
         where: { id: userId },
         data: { ticket: { decrement: dto.ticketCount } },
       });
 
-      // 응모 내역 생성
       const entry = await tx.subscriptionEntry.create({
         data: { userId, subscriptionId: id, ticketCount: dto.ticketCount },
       });
