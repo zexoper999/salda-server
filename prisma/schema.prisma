@@ -142,6 +142,7 @@ model Subscription {
   description   String?
   imageUrl      String?            // 청약 대표 이미지 (R2)
   deposit       Int                // 보증금 (원)
+  maxEntries    Int                @default(0)  // 목표 응모수 (어드민 입력, 0이면 미설정)
   bonusIncluded Boolean            @default(false) // 보너스 응모 포함 여부
   startAt       DateTime
   endAt         DateTime
