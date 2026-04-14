@@ -27,8 +27,9 @@ export class SubscriptionsController {
 
   // GET /subscriptions?type=JEONSE|VEHICLE — 청약 목록
   @Get()
-  findAll(@Query('type') type?: SubscriptionType) {
-    return this.subscriptionsService.findAll(type);
+  findAll(@Query('type') type: SubscriptionType | undefined, @Req() req: Request) {
+    const { userId } = req.user as JwtPayload;
+    return this.subscriptionsService.findAll(type, userId);
   }
 
   // GET /subscriptions/my/entries — 내 응모 내역
