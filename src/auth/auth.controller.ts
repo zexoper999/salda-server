@@ -45,8 +45,8 @@ export class AuthController {
     // req.user에는 JwtStrategy에서 리턴한 { userId, kakaoId }가 들어있음
     const userPayload = req.user as { userId: number; kakaoId: string };
 
-    // DB에서 해당 유저의 조회
+    // DB에서 해당 유저 조회
     const user = await this.usersService.findByKakaoId(userPayload.kakaoId);
-    return user;
+    return { status: 'success', data: user, message: 'OK' };
   }
 }
