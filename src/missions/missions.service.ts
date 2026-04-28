@@ -140,6 +140,7 @@ export class MissionsService {
         where: { id: userId },
         data: {
           point: { increment: mission.rewardPoint },
+          totalEarnedPoint: { increment: mission.rewardPoint },
           ticket: { increment: mission.rewardTicket + bonusTicket },
         },
       });
