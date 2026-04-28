@@ -24,5 +24,6 @@ import { UsersModule } from '../users/users.module';
   ],
   controllers: [AuthController],
   providers: [AuthService, KakaoStrategy, JwtStrategy],
+  exports: [AuthService],
 })
 export class AuthModule {}
