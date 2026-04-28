@@ -266,6 +266,22 @@ model PushNotification {
 }
 
 // ─────────────────────────────────────────────
+// Banner (홈 화면 광고 배너)
+// ─────────────────────────────────────────────
+
+model Banner {
+  id          Int      @id @default(autoincrement())
+  imageUrl    String?
+  title       String
+  description String?
+  startAt     DateTime
+  endAt       DateTime
+  isPublic    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// ─────────────────────────────────────────────
 // Attendance (출석)
 // ─────────────────────────────────────────────
 
