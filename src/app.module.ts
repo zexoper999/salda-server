@@ -8,6 +8,8 @@ import { AuthModule } from './auth/auth.module';
 import { MissionsModule } from './missions/missions.module';
 import { SubscriptionsModule } from './subscriptions/subscriptions.module';
 import { ProductsModule } from './products/products.module';
+import { AdminModule } from './admin/admin.module';
+import { BannersModule } from './banners/banners.module';
 
 @Module({
   imports: [
@@ -17,6 +19,8 @@ import { ProductsModule } from './products/products.module';
     MissionsModule,
     SubscriptionsModule,
     ProductsModule,
+    AdminModule,
+    BannersModule,
   ],
   controllers: [AppController],
   providers: [AppService, PrismaService],
