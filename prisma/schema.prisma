@@ -71,7 +71,9 @@ model User {
   name      String
   phone     String?
   birthYear Int?              // 나이 제한 검증용 (만 19세 미만 미션 차단)
-  point     Int      @default(0) // 보유 포인트
+  point            Int      @default(0) // 보유 포인트
+  totalEarnedPoint Int      @default(0) // 누적 획득 포인트
+  adjustedPoint    Int      @default(0) // 어드민 수동 조정 누적값
   ticket    Int      @default(0) // 보유 응모권 수
   role      UserRole @default(USER)
   createdAt DateTime @default(now())
