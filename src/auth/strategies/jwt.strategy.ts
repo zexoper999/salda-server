@@ -19,7 +19,12 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
   }
 
   // JWT 검증 성공 시 req.user에 담길 데이터
-  validate(payload: { userId: number; kakaoId: string }) {
-    return { userId: payload.userId, kakaoId: payload.kakaoId };
+  validate(payload: { userId: number; kakaoId?: string; role?: string; username?: string }) {
+    return {
+      userId: payload.userId,
+      kakaoId: payload.kakaoId ?? '',
+      role: payload.role ?? 'USER',
+      username: payload.username,
+    };
   }
 }

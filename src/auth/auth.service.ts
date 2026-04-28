@@ -24,7 +24,13 @@ export class AuthService {
 
   // JWT 토큰 발급
   generateToken(user: { id: number; kakaoId: string }) {
-    const payload = { userId: user.id, kakaoId: user.kakaoId };
+    const payload = { userId: user.id, kakaoId: user.kakaoId, role: 'USER' };
+    return this.jwtService.sign(payload);
+  }
+
+  // 어드민 JWT 발급
+  generateAdminToken(username: string) {
+    const payload = { userId: 0, role: 'ADMIN', username };
     return this.jwtService.sign(payload);
   }
 }
