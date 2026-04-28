@@ -15,7 +15,7 @@ export class AdminAuthController {
     const token = await this.adminAuthService.login(body.username, body.password);
     if (!token) throw new UnauthorizedException('아이디 또는 비밀번호가 올바르지 않습니다.');
 
-    res.cookie('accessToken', token, {
+    res.cookie('adminToken', token, {
       httpOnly: true,
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
@@ -32,7 +32,7 @@ export class AdminAuthController {
   @Post('logout')
   @UseGuards(AdminGuard)
   logout(@Res() res: Response) {
-    res.clearCookie('accessToken');
+    res.clearCookie('adminToken');
     return res.json({ status: 'success', data: null, message: '로그아웃 완료' });
   }
 }
