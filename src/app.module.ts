@@ -10,6 +10,7 @@ import { SubscriptionsModule } from './subscriptions/subscriptions.module';
 import { ProductsModule } from './products/products.module';
 import { AdminModule } from './admin/admin.module';
 import { BannersModule } from './banners/banners.module';
+import { UploadModule } from './upload/upload.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { BannersModule } from './banners/banners.module';
     ProductsModule,
     AdminModule,
     BannersModule,
+    UploadModule,
   ],
   controllers: [AppController],
   providers: [AppService, PrismaService],
