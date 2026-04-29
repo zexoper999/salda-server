@@ -25,13 +25,21 @@ export class SubscriptionsService {
     });
     const missionCount = totalMissions % 10;
 
+    const userEntries = await this.prisma.client.subscriptionEntry.groupBy({
+      by: ['subscriptionId'],
+      where: { userId },
+      _count: { id: true },
+    });
+    const entryCountMap = new Map(userEntries.map((e) => [e.subscriptionId, e._count.id]));
+
     const items = subscriptions.map(({ _count, ...sub }) => {
       const totalEntryCount = _count.entries;
       const entryProgress =
         sub.maxEntries > 0
           ? parseFloat(((totalEntryCount / sub.maxEntries) * 100).toFixed(1))
           : 0;
-      return { ...sub, totalEntryCount, entryProgress };
+      const myEntryCount = entryCountMap.get(sub.id) ?? 0;
+      return { ...sub, totalEntryCount, entryProgress, myEntryCount };
     });
 
     return {
@@ -78,6 +86,10 @@ export class SubscriptionsService {
         ? parseFloat(((totalEntryCount / subscription.maxEntries) * 100).toFixed(1))
         : 0;
 
+    const myEntryCount = await this.prisma.client.subscriptionEntry.count({
+      where: { subscriptionId: id, userId },
+    });
+
     return {
       status: 'success',
       data: {
@@ -86,6 +98,7 @@ export class SubscriptionsService {
         totalTickets,
         myTickets,
         myEntryRate,
+        myEntryCount,
         entryProgress,
       },
     };
