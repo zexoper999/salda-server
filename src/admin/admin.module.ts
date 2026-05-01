@@ -9,6 +9,8 @@ import { AdminSubscriptionsController } from './subscriptions/admin-subscription
 import { AdminSubscriptionsService } from './subscriptions/admin-subscriptions.service';
 import { AdminProductsController } from './products/admin-products.controller';
 import { AdminProductsService } from './products/admin-products.service';
+import { AdminMissionsController } from './missions/admin-missions.controller';
+import { AdminMissionsService } from './missions/admin-missions.service';
 import { AuthModule } from '../auth/auth.module';
 import { PrismaService } from '../prisma.service';
 
@@ -20,6 +22,7 @@ import { PrismaService } from '../prisma.service';
     AdminUsersController,
     AdminSubscriptionsController,
     AdminProductsController,
+    AdminMissionsController,
   ],
   providers: [
     AdminAuthService,
@@ -27,6 +30,7 @@ import { PrismaService } from '../prisma.service';
     AdminUsersService,
     AdminSubscriptionsService,
     AdminProductsService,
+    AdminMissionsService,
     PrismaService,
   ],
   exports: [AdminBannersService],
