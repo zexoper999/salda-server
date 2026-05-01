@@ -177,9 +177,11 @@ export class MissionsService {
     return { status: 'success', data: records };
   }
 
-  // 미션 생성 (어드민)
+  // 미션 생성 (어드민 모듈로 이전됨 — 레거시 호환용)
   async create(dto: CreateMissionDto) {
-    const mission = await this.prisma.client.mission.create({ data: dto });
+    const mission = await this.prisma.client.mission.create({
+      data: { ...dto, imageUrls: dto.imageUrls ?? [] },
+    });
     return { status: 'success', data: mission };
   }
 

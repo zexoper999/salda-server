@@ -25,8 +25,7 @@ export class CreateMissionDto {
   description?: string;
 
   @IsOptional()
-  @IsString()
-  imageUrl?: string;
+  imageUrls?: string[];
 
   @IsOptional()
   @IsString()
