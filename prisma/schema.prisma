@@ -97,7 +97,7 @@ model Mission {
   title        String          // 미션 제목
   oneLineDesc  String?         // 한 줄 설명
   description  String?         // 상세 설명
-  imageUrl     String?         // 미션 썸네일 이미지 (R2)
+  imageUrls    String[]        // 미션 이미지 목록 (R2, 최대 10장)
   publisher    String?         // 발주처 (광고주)
   missionUrl   String?         // 미션 수행 링크
   rewardPoint  Int             @default(0)  // 완료 시 지급 포인트
@@ -123,6 +123,7 @@ model UserMission {
   id          Int      @id @default(autoincrement())
   userId      Int
   missionId   Int
+  success     Boolean  @default(true) // 성공 여부
   completedAt DateTime @default(now())
 
   user    User    @relation(fields: [userId],    references: [id])
