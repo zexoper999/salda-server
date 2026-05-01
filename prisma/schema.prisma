@@ -180,6 +180,7 @@ model Product {
   category    ProductCategory
   status      ProductStatus @default(ON_SALE)
   name        String
+  brand       String?       // 상품분류 (배달의민족, 스타벅스 등)
   description String?
   imageUrl    String?       // 상품 이미지 (R2)
   price       Int           // 포인트 가격
