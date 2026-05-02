@@ -115,7 +115,6 @@ export class AdminSubscriptionsService {
         ...(dto.bonusIncluded !== undefined && { bonusIncluded: dto.bonusIncluded }),
         ...(dto.startAt && { startAt: new Date(dto.startAt) }),
         ...(dto.endAt && { endAt: new Date(dto.endAt) }),
-        ...(dto.status && { status: dto.status }),
       },
     });
     return { status: 'success', data: updated };
