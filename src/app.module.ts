@@ -11,6 +11,7 @@ import { ProductsModule } from './products/products.module';
 import { AdminModule } from './admin/admin.module';
 import { BannersModule } from './banners/banners.module';
 import { UploadModule } from './upload/upload.module';
+import { NoticesModule } from './notices/notices.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { UploadModule } from './upload/upload.module';
     AdminModule,
     BannersModule,
     UploadModule,
+    NoticesModule,
   ],
   controllers: [AppController],
   providers: [AppService, PrismaService],
