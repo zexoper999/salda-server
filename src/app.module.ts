@@ -13,6 +13,7 @@ import { BannersModule } from './banners/banners.module';
 import { UploadModule } from './upload/upload.module';
 import { NoticesModule } from './notices/notices.module';
 import { InquiriesModule } from './inquiries/inquiries.module';
+import { FaqModule } from './faq/faq.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { InquiriesModule } from './inquiries/inquiries.module';
     UploadModule,
     NoticesModule,
     InquiriesModule,
+    FaqModule,
   ],
   controllers: [AppController],
   providers: [AppService, PrismaService],
