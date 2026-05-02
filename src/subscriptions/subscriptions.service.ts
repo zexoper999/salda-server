@@ -4,12 +4,19 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
-import { SubscriptionType } from '../../generated/prisma/enums.js';
+import { SubscriptionType, SubscriptionStatus } from '../../generated/prisma/enums.js';
 import { EnterSubscriptionDto } from './dto/enter-subscription.dto';
 
 @Injectable()
 export class SubscriptionsService {
   constructor(private readonly prisma: PrismaService) {}
+
+  private computeStatus(stored: SubscriptionStatus, endAt: Date, totalEntries: number, maxEntries: number): SubscriptionStatus {
+    if (stored === SubscriptionStatus.CLOSED) return SubscriptionStatus.CLOSED;
+    const now = new Date();
+    if (now > endAt || (maxEntries > 0 && totalEntries >= maxEntries * 0.9)) return SubscriptionStatus.CLOSING_SOON;
+    return SubscriptionStatus.ONGOING;
+  }
 
   // 청약 목록 — 타입 필터, 각 청약의 응모달성률 + 사용자 미션진행도 포함
   async findAll(type: SubscriptionType | undefined, userId: number) {
@@ -39,7 +46,7 @@ export class SubscriptionsService {
           ? parseFloat(((totalEntryCount / sub.maxEntries) * 100).toFixed(1))
           : 0;
       const myEntryCount = entryCountMap.get(sub.id) ?? 0;
-      return { ...sub, totalEntryCount, entryProgress, myEntryCount };
+      return { ...sub, status: this.computeStatus(sub.status, sub.endAt, totalEntryCount, sub.maxEntries), totalEntryCount, entryProgress, myEntryCount };
     });
 
     return {
@@ -94,6 +101,7 @@ export class SubscriptionsService {
       status: 'success',
       data: {
         ...subscription,
+        status: this.computeStatus(subscription.status, subscription.endAt, totalEntryCount, subscription.maxEntries),
         totalEntryCount,
         totalTickets,
         myTickets,
