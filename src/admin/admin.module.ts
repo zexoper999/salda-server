@@ -15,6 +15,8 @@ import { AdminNoticesController } from './notices/admin-notices.controller';
 import { AdminNoticesService } from './notices/admin-notices.service';
 import { AdminInquiriesController } from './inquiries/admin-inquiries.controller';
 import { AdminInquiriesService } from './inquiries/admin-inquiries.service';
+import { AdminFaqController } from './faq/admin-faq.controller';
+import { AdminFaqService } from './faq/admin-faq.service';
 import { AuthModule } from '../auth/auth.module';
 import { PrismaService } from '../prisma.service';
 
@@ -29,6 +31,7 @@ import { PrismaService } from '../prisma.service';
     AdminMissionsController,
     AdminNoticesController,
     AdminInquiriesController,
+    AdminFaqController,
   ],
   providers: [
     AdminAuthService,
@@ -39,6 +42,7 @@ import { PrismaService } from '../prisma.service';
     AdminMissionsService,
     AdminNoticesService,
     AdminInquiriesService,
+    AdminFaqService,
     PrismaService,
   ],
   exports: [AdminBannersService],
