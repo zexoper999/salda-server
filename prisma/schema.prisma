@@ -76,6 +76,12 @@ model User {
   adjustedPoint    Int      @default(0) // 어드민 수동 조정 누적값
   ticket    Int      @default(0) // 보유 응모권 수
   role      UserRole @default(USER)
+  fcmToken          String?
+  notifAll          Boolean  @default(true)
+  notifSubscription Boolean  @default(false)
+  notifMarketing    Boolean  @default(false)
+  notifInfo         Boolean  @default(true)
+  notifNight        Boolean  @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -84,6 +90,7 @@ model User {
   purchases          Purchase[]
   inquiries          Inquiry[]
   attendances        Attendance[]
+  pushTargets        PushNotificationTarget[]
 }
 
 // ─────────────────────────────────────────────
@@ -263,12 +270,24 @@ model Inquiry {
 // ─────────────────────────────────────────────
 
 model PushNotification {
-  id        Int      @id @default(autoincrement())
-  title     String
-  body      String
-  sendAt    DateTime?  // 예약 발송 시간 (null이면 즉시)
-  sentAt    DateTime?  // 실제 발송 완료 시간
-  createdAt DateTime   @default(now())
+  id         Int      @id @default(autoincrement())
+  title      String
+  body       String
+  targetType String   @default("ALL")     // "ALL" | "SPECIFIC"
+  status     String   @default("PENDING") // "PENDING" | "SENT" | "FAILED"
+  sendAt     DateTime?  // 예약 발송 시간 (null이면 즉시)
+  sentAt     DateTime?  // 실제 발송 완료 시간
+  createdAt  DateTime   @default(now())
+
+  targets    PushNotificationTarget[]
+}
+
+model PushNotificationTarget {
+  id             Int              @id @default(autoincrement())
+  notificationId Int
+  userId         Int
+  notification   PushNotification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+  user           User             @relation(fields: [userId], references: [id])
 }
 
 // ─────────────────────────────────────────────
