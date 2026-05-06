@@ -14,6 +14,8 @@ import { UploadModule } from './upload/upload.module';
 import { NoticesModule } from './notices/notices.module';
 import { InquiriesModule } from './inquiries/inquiries.module';
 import { FaqModule } from './faq/faq.module';
+import { HistoryModule } from './history/history.module';
+import { NotificationsModule } from './notifications/notifications.module';
 
 @Module({
   imports: [
@@ -29,6 +31,8 @@ import { FaqModule } from './faq/faq.module';
     NoticesModule,
     InquiriesModule,
     FaqModule,
+    HistoryModule,
+    NotificationsModule,
   ],
   controllers: [AppController],
   providers: [AppService, PrismaService],
