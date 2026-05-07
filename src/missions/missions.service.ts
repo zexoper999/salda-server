@@ -131,33 +131,61 @@ export class MissionsService {
     }
 
     return this.prisma.client.$transaction(async (tx) => {
+      // 1. 미션 완료 기록
       await tx.userMission.create({ data: { userId, missionId } });
 
-      const totalCompleted = await tx.userMission.count({ where: { userId } });
-      const bonusTicket = totalCompleted % 10 === 0 ? 3 : 0;
-
+      // 2. 포인트 지급
       const updated = await tx.user.update({
         where: { id: userId },
         data: {
           point: { increment: mission.rewardPoint },
           totalEarnedPoint: { increment: mission.rewardPoint },
-          ticket: { increment: mission.rewardTicket + bonusTicket },
         },
       });
+
+      // 3. 설정된 청약 조회 (반드시 1개 존재)
+      const setting = await tx.userSubscriptionSetting.findUnique({ where: { userId } });
+      if (!setting) throw new BadRequestException('설정된 청약이 없습니다.');
+
+      // 4. 청약별 진행 상태 업데이트
+      // rewardTicket = 이번 미션의 조각 수 (미션마다 다를 수 있음)
+      const piecesEarned = mission.rewardTicket;
+      const progress = await tx.userSubscriptionProgress.upsert({
+        where: { userId_subscriptionId: { userId, subscriptionId: setting.subscriptionId } },
+        create: { userId, subscriptionId: setting.subscriptionId, missionCount: 1, totalPieces: piecesEarned },
+        update: { missionCount: { increment: 1 }, totalPieces: { increment: piecesEarned } },
+      });
+
+      // 5. totalPieces가 10의 배수를 넘을 때마다 응모권 1개씩 자동 응모
+      const prevTotalPieces = progress.totalPieces - piecesEarned;
+      const newTicketsEarned = Math.floor(progress.totalPieces / 10) - Math.floor(prevTotalPieces / 10);
+
+      if (newTicketsEarned > 0) {
+        await tx.subscriptionEntry.createMany({
+          data: Array.from({ length: newTicketsEarned }, () => ({
+            userId,
+            subscriptionId: setting.subscriptionId,
+            ticketCount: 1,
+          })),
+        });
+      }
+
+      const currentPieces = progress.totalPieces % 10;
+      const totalTickets = Math.floor(progress.totalPieces / 10);
 
       return {
         status: 'success',
         data: {
           pointEarned: mission.rewardPoint,
-          ticketEarned: mission.rewardTicket,
-          bonusTicket,
           totalPoint: updated.point,
-          totalTicket: updated.ticket,
+          piecesEarned,
+          currentPieces,
+          totalTickets,
+          newTicketsEarned,
         },
-        message:
-          bonusTicket > 0
-            ? `미션 완료! 10회 달성 보너스 응모권 ${bonusTicket}장이 추가 지급되었습니다.`
-            : '미션을 완료했습니다.',
+        message: newTicketsEarned > 0
+          ? `응모권 ${newTicketsEarned}개가 자동 응모되었습니다!`
+          : '미션을 완료했습니다.',
       };
     });
   }
