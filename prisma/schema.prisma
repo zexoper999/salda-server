@@ -74,7 +74,6 @@ model User {
   point            Int      @default(0) // 보유 포인트
   totalEarnedPoint Int      @default(0) // 누적 획득 포인트
   adjustedPoint    Int      @default(0) // 어드민 수동 조정 누적값
-  ticket    Int      @default(0) // 보유 응모권 수
   role      UserRole @default(USER)
   fcmToken          String?
   notifAll          Boolean  @default(true)
@@ -85,12 +84,14 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  userMissions       UserMission[]
-  subscriptionEntries SubscriptionEntry[]
-  purchases          Purchase[]
-  inquiries          Inquiry[]
-  attendances        Attendance[]
-  pushTargets        PushNotificationTarget[]
+  userMissions              UserMission[]
+  subscriptionEntries       SubscriptionEntry[]
+  subscriptionSetting       UserSubscriptionSetting?
+  subscriptionProgresses    UserSubscriptionProgress[]
+  purchases                 Purchase[]
+  inquiries                 Inquiry[]
+  attendances               Attendance[]
+  pushTargets               PushNotificationTarget[]
 }
 
 // ─────────────────────────────────────────────
@@ -154,12 +155,15 @@ model Subscription {
   deposit       Int                // 보증금 (원)
   maxEntries    Int                @default(0)  // 목표 응모수 (어드민 입력, 0이면 미설정)
   bonusIncluded Boolean            @default(false) // 보너스 응모 포함 여부
+  isDefault     Boolean            @default(false) // 신규 가입자 기본 청약 (어드민 지정, 1개만 true)
   startAt       DateTime
   endAt         DateTime
   createdAt     DateTime           @default(now())
   updatedAt     DateTime           @updatedAt
 
-  entries SubscriptionEntry[]
+  entries             SubscriptionEntry[]
+  userSettings        UserSubscriptionSetting[]
+  userProgresses      UserSubscriptionProgress[]
 }
 
 // ─────────────────────────────────────────────
@@ -177,6 +181,43 @@ model SubscriptionEntry {
   subscription Subscription @relation(fields: [subscriptionId], references: [id])
 
   @@index([userId, subscriptionId])
+}
+
+// ─────────────────────────────────────────────
+// UserSubscriptionSetting (유저의 현재 청약 설정)
+// 유저 1인당 1개 청약만 설정 가능 (userId unique)
+// ─────────────────────────────────────────────
+
+model UserSubscriptionSetting {
+  id             Int          @id @default(autoincrement())
+  userId         Int          @unique
+  subscriptionId Int
+  setAt          DateTime     @default(now())
+
+  user         User         @relation(fields: [userId],         references: [id], onDelete: Cascade)
+  subscription Subscription @relation(fields: [subscriptionId], references: [id])
+}
+
+// ─────────────────────────────────────────────
+// UserSubscriptionProgress (청약별 미션/조각 진행 현황)
+// missionCount  : 이 청약에 귀속된 미션 완료 횟수 (1씩 증가)
+// totalPieces   : 누적 획득 조각 수 (mission.rewardTicket 합산)
+//   → currentPieces = totalPieces % 10        (UI: "N/10"의 N)
+//   → totalTickets  = floor(totalPieces / 10)  (UI: 응모횟수 "11회")
+// ※ 미션별 rewardTicket이 다를 수 있어 missionCount ≠ totalPieces 가능
+// ─────────────────────────────────────────────
+
+model UserSubscriptionProgress {
+  id             Int    @id @default(autoincrement())
+  userId         Int
+  subscriptionId Int
+  missionCount   Int    @default(0)
+  totalPieces    Int    @default(0)
+
+  user         User         @relation(fields: [userId],         references: [id], onDelete: Cascade)
+  subscription Subscription @relation(fields: [subscriptionId], references: [id])
+
+  @@unique([userId, subscriptionId])
 }
 
 // ─────────────────────────────────────────────
