@@ -81,8 +81,8 @@ export class HistoryService {
       items.push({
         id: `entry_${e.id}`,
         type: 'TICKET_USE',
-        title: `응모권 ${e.ticketCount}회 사용`,
-        subtitle: '청약 응모',
+        title: `응모권 ${e.ticketCount}개 자동 응모`,
+        subtitle: e.subscription.title,
         amount: e.ticketCount,
         sign: '-',
         currency: 'TICKET',
