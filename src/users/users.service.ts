@@ -13,10 +13,23 @@ export class UsersService {
     });
   }
 
-  // 신규 유저 생성 (최초 카카오 로그인 시 자동 회원가입)
+  // 신규 유저 생성 (최초 카카오 로그인 시 자동 회원가입, default 청약 자동 설정)
   async createKakaoUser(kakaoId: string, name: string) {
-    return this.prisma.client.user.create({
-      data: { kakaoId, name },
+    return this.prisma.client.$transaction(async (tx) => {
+      const user = await tx.user.create({ data: { kakaoId, name } });
+
+      const defaultSub = await tx.subscription.findFirst({
+        where: { isDefault: true },
+        select: { id: true },
+      });
+
+      if (defaultSub) {
+        await tx.userSubscriptionSetting.create({
+          data: { userId: user.id, subscriptionId: defaultSub.id },
+        });
+      }
+
+      return user;
     });
   }
 }
