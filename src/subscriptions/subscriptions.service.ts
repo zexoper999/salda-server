@@ -60,14 +60,21 @@ export class SubscriptionsService {
         sub.maxEntries > 0
           ? parseFloat(((totalEntryCount / sub.maxEntries) * 100).toFixed(1))
           : 0;
+      const myProgress = this.buildProgress(progressMap.get(sub.id) ?? null);
+      // totalEntryCount = total SubscriptionEntry rows (each ticketCount: 1) = total tickets overall
+      const myEntryRate =
+        totalEntryCount > 0
+          ? parseFloat(((myProgress.totalTickets / totalEntryCount) * 100).toFixed(4))
+          : 0;
       return {
         ...sub,
         status: this.computeStatus(sub.status, sub.endAt, totalEntryCount, sub.maxEntries),
         totalEntryCount,
         entryProgress,
+        myEntryRate,
         myEntryCount: entryCountMap.get(sub.id) ?? 0,
         isMySubscription: setting?.subscriptionId === sub.id,
-        myProgress: this.buildProgress(progressMap.get(sub.id) ?? null),
+        myProgress,
       };
     });
 
