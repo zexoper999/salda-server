@@ -55,6 +55,7 @@ export class AdminSubscriptionsService {
       endAt: s.endAt,
       createdAt: s.createdAt,
       maxEntries: s.maxEntries,
+      isDefault: s.isDefault,
       entryCount: s._count.entries,
       entryCountFmt: this.fmtEntryCount(s._count.entries),
       status: this.computeStatus(s.status, s.endAt, s._count.entries, s.maxEntries),
@@ -132,6 +133,32 @@ export class AdminSubscriptionsService {
       data: { status: SubscriptionStatus.CLOSED },
     });
     return { status: 'success', data: updated, message: '청약이 마감 처리되었습니다.' };
+  }
+
+  // 신규 가입자 Default 청약 지정 — 기존 Default 해제 후 재지정 (1개만 유지)
+  async setDefault(id: number) {
+    const sub = await this.prisma.client.subscription.findUnique({ where: { id } });
+    if (!sub) throw new NotFoundException('청약을 찾을 수 없습니다.');
+
+    const entryCount = await this.prisma.client.subscriptionEntry.count({
+      where: { subscriptionId: id },
+    });
+    if (this.computeStatus(sub.status, sub.endAt, entryCount, sub.maxEntries) === SubscriptionStatus.CLOSED) {
+      throw new BadRequestException('마감된 청약은 Default로 지정할 수 없습니다.');
+    }
+
+    await this.prisma.client.$transaction([
+      this.prisma.client.subscription.updateMany({
+        where: { isDefault: true },
+        data: { isDefault: false },
+      }),
+      this.prisma.client.subscription.update({
+        where: { id },
+        data: { isDefault: true },
+      }),
+    ]);
+
+    return { status: 'success', message: 'Default 청약이 지정되었습니다.' };
   }
 
   async remove(id: number) {

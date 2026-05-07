@@ -38,6 +38,11 @@ export class AdminSubscriptionsController {
     return this.service.close(id);
   }
 
+  @Patch(':id/set-default')
+  setDefault(@Param('id', ParseIntPipe) id: number) {
+    return this.service.setDefault(id);
+  }
+
   @Delete(':id')
   remove(@Param('id', ParseIntPipe) id: number) {
     return this.service.remove(id);
